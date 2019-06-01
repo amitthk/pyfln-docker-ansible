@@ -17,9 +17,9 @@ from DbHelper import DbHelper
 
 DEBUG = True
 
-blueprint = Blueprint('userinfo',__name__,url_prefix='/api/userinfo')
+blueprint = Blueprint('db',__name__,url_prefix='/api/db')
 api = Api(blueprint)
-ns = api.namespace('userinfo',description='Simple Flask Ldap App')
+ns = api.namespace('db',description='Simple Flask Ldap App')
 
 
 add_user_model = api.model("add_user_model", {
@@ -33,24 +33,25 @@ add_user_model = api.model("add_user_model", {
 
 
 
-utils = imp.load_source('*', './userinfo/utils.py')
+utils = imp.load_source('*', './db/utils.py')
 
-@ns.route("")
-@ns.route("/<id>")
+@ns.route("/<collection>")
 class Home(Resource):
     # method_decorators=[must_auth]
-    def get(self):
+    def get(self, collection=None):
         """
-        Function to get the userinfos.
+        Function to get the dbs.
         """
         try:
-            dbhelper = DbHelper()
+            if collection is None:
+                return Response('Collection name cannot be null', status = 500)
+            dbhelper =DbHelper(collectionName=collection)
             q_params = utils.parse_q_params(request.query_string)
             if q_params:
                 query = {k: int(v) if isinstance(v, str) and v.isdigit() else v for k, v in q_params.items()}
                 records_fetched = dbhelper.collection.find(query)
                 if records_fetched.count() > 0:
-                    return json_util.dumps(records_fetched)
+                    return Response(dumps(records_fetched),status = 200)
                 else:
                     return "No Records found", 404
             else:
@@ -61,17 +62,20 @@ class Home(Resource):
         except:
             raise #return "", 500
 
-    @api.expect(add_user_model)    
-    def post(self):
+    #@api.expect(add_user_model)    
+    def post(self, collection=None):
         """
-        Function to add new userinfo(s).
+        Function to add new db(s).
         """
         try:
-            dbhelper = DbHelper()
+            if collection is None:
+                return Response('Collection name cannot be null', status = 500)
+            dbhelper =DbHelper(collectionName=collection)
             try:
-                body = ast.literal_eval(json.dumps(request.get_json()))
+                valuestr = json.dumps(request.get_json(),separators=(',',':'), sort_keys=True)
+                body = json.loads(valuestr)
             except:
-                return "", 400
+                return Response("Request cannot be parsed as json", 500)
 
             record_created = dbhelper.collection.insert(body)
 
@@ -82,18 +86,22 @@ class Home(Resource):
         except:
             raise #return "", 500
 
-    @api.expect(add_user_model)    
-    def put(self, id=None):
+    #@api.expect(add_user_model)    
+    def put(self, collection=None):
         """
-        Function to update a userinfo.
+        Function to update a db.
         """
         try:
-            dbhelper = DbHelper()
+            if collection is None:
+                return Response('Collection name cannot be null', status = 500)
+            dbhelper =DbHelper(collectionName=collection)
             try:
-                body = ast.literal_eval(json.dumps(request.get_json()))
+                valuestr = json.dumps(request.get_json(),separators=(',',':'), sort_keys=True)
+                body = json.loads(valuestr)
             except:
-                return "", 400
-            records_updated = dbhelper.collection.update_one({"_id": ObjectId(id)}, body)
+                return Response("Request cannot be parsed as json", 500)
+
+            records_updated = dbhelper.collection.update_one({"_id": ObjectId(body._id)}, body)
 
             if records_updated.modified_count > 0:
                 return Response(jsonify("Updated {} items!".format(records_updated.modified_count)), status=200, mimetype = 'application/json')
@@ -103,18 +111,24 @@ class Home(Resource):
             raise #return "", 500
 
     
-    def delete(self, id=None):
+    def delete(self, collection=None, id=None):
         """
-        Function to delete a userinfo.
+        Function to delete a db.
         """
         try:
-            dbhelper = DbHelper()
+            if collection is None:
+                return Response('Collection name cannot be null', status = 500)
+            dbhelper =DbHelper(collectionName=collection)
             q_params = utils.parse_q_params(request.query_string)
-            delete_user = dbhelper.collection.delete_one({"_id": ObjectId(id)})
-            if delete_user.deleted_count > 0 :
-                return Response("Deleted {} items!".format(delete_user.deleted_count), status=204, mimetype = 'application/json')
+
+            if q_params and q_params.get('ObjectId'):
+                delete_user = dbhelper.collection.delete_one({"_id": ObjectId(q_params.get('ObjectId'))})
+                if delete_user.deleted_count > 0 :
+                    return Response("Deleted {} items!".format(delete_user.deleted_count), status=204, mimetype = 'application/json')
+                else:
+                    return Response("Record not found", 404)
             else:
-                return "", 404
+                return Response("ObjectId not provided", 404)
         except:
             raise #return "", 500
 
