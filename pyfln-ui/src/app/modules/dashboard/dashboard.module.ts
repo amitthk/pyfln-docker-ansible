@@ -6,6 +6,7 @@ import { DashboardRoutesModule } from './dashboard-routes.module';
 import { FormsModule } from '@angular/forms';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { HttpService } from 'app/services/http.service';
+import { MindMapComponent } from './mind-map/mind-map.component';
 
 @NgModule({
   imports: [
@@ -13,7 +14,7 @@ import { HttpService } from 'app/services/http.service';
     DashboardRoutesModule,
     FormsModule,
     NgbModule ],
-  declarations: [IndexComponent, YamlreadComponent],
+    declarations: [IndexComponent, YamlreadComponent, MindMapComponent],
   providers: [HttpService]
 })
 export class DashboardModule { }
