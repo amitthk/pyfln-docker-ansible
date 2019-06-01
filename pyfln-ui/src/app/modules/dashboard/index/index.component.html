@@ -22,10 +22,10 @@
           <td>{{ registration.email }}</td>
           <td>{{ registration.country }}</td>
           <td>
-            <button type="button" class="btn btn-info" (click)="onEdit(i)">Edit</button>
+            <button type="button" class="btn btn-info" (click)="onEdit(registration)">Edit</button>
           </td>
           <td>
-            <button type="button" class="btn btn-danger" (click)="onDelete(i)">Delete</button>
+            <button type="button" class="btn btn-danger" (click)="onDelete(registration)">Delete</button>
           </td>
         </tr>
       </tbody>
@@ -79,7 +79,8 @@
           </div>
         </div>
       </div>
-      <button type="submit" class="btn btn-success">{{submitType}}</button>
+      <button type="submit" (click)='onSave()' *ngIf="submitType=='Save'" class="btn btn-success">{{submitType}}</button>
+      <button type="submit" (click)='onUpdate()' *ngIf="submitType=='Update'" class="btn btn-success">{{submitType}}</button>
       <button type="submit" class="btn btn-primary" (click)="onCancel()">Cancel</button>
     </form>
   </div>
