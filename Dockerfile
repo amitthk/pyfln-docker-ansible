@@ -3,12 +3,13 @@ FROM centos:latest
 ARG APP_HOME=/opt/app-root/src
 ARG APP_OWNER_UUID=1000
 ARG NODEJS_VERSION=v10.16.0
+ARG NODEJS_DISTRO=linux-x64
 ENV APP_HOME=$APP_HOME \
     APP_OWNER_UUID=$APP_OWNER_UUID \
     NODEJS_VERSION=$NODEJS_VERSION
 
-#env from original 
-RUN yum -y update && yum -y install gcc gcc-c++ unzip wget python-setuptools python-devel openldap-devel python-ldap \
+#env from original
+RUN yum -y update && yum -y install gcc gcc-c++ unzip wget python-setuptools python-devel openldap-devel \
     && easy_install pip supervisor \
     && yum clean all
 
@@ -17,24 +18,29 @@ RUN yum -y update && yum -y install gcc gcc-c++ unzip wget python-setuptools pyt
 
 USER root
 
-COPY pyfln-auth/files /tmp/pyfln-auth/files
-COPY pyfln-auth/app/requirements.txt /tmp/pyfln-auth/requirements.txt
-COPY pyfln-ui/files /tmp/pyfln-ui/files
-
 RUN useradd --no-log-init -u ${APP_OWNER_UUID} -g 0 -ms /bin/bash pyflnuser
 
 RUN bash -c "pip install --upgrade pip" \
-  && bash -c "pip install python-ldap==3.1.0" \
-  && bash -c "cd ${APP_HOME}/pyfln-auth && pip install -r requirements.txt" \
-  && wget "https://nodejs.org/dist/${NODEJS_VERSION}/node-${NODEJS_VERSION}-linux-x64.tar.xz" -P /tmp \
-  && tar -xf node-${NODEJS_VERSION}-linux-x64.tar.xz --directory /usr/local --strip-components 1 \
-  && cd /usr/local/node-v* && ./configure && make && make install
+  && bash -c "pip install python-ldap==3.1.0"
 
-COPY pyfln-auth/app ${APP_HOME}/pyfln-auth
-COPY pyfln-ui /tmp/pyfln-ui
+RUN wget "https://nodejs.org/dist/${NODEJS_VERSION}/node-${NODEJS_VERSION}-linux-x64.tar.xz" -P /tmp \
+  && mkdir -p /usr/local/lib/nodejs \
+  && cd /tmp && tar -xJf node-${NODEJS_VERSION}-$NODEJS_DISTRO.tar.xz --strip-components=1 --directory /usr/local/lib/nodejs \
+  && find /usr/local/lib/nodejs
+
+ENV PATH=/usr/local/lib/nodejs/bin:$PATH
+
 
 RUN npm config set user 0 && npm config set unsafe-perm true \
-    && npm --max_old_space_size=8000 --registry https://registry.npmjs.org/ install -g @angular/cli@1.6.8 
+    && npm --max_old_space_size=8000 --registry https://registry.npmjs.org/ install -g @angular/cli@1.6.8
+
+#llllll
+
+
+COPY pyfln-auth ${APP_HOME}/pyfln-auth
+COPY pyfln-ui /tmp/pyfln-ui
+
+RUN  bash -c "cd ${APP_HOME}/pyfln-auth && pip install -r requirements.txt"
 
 RUN cd /tmp/pyfln-ui && rm package-lock.json || true \
     && npm config set user 0 && npm config set unsafe-perm true \
