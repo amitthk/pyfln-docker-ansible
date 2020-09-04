@@ -29,7 +29,7 @@
     "zone.js": "^0.8.19"
   },
   "devDependencies": {
-    "node-sass": "4.12.0",
+    "node-sass": "4.13.1",
     "@angular/cli": "1.6.8",
     "@angular/compiler-cli": "^5.2.0",
     "@angular/language-service": "^5.2.0",
